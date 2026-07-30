@@ -1,0 +1,28 @@
+/target/
+**/target/
+
+# Rust
+Cargo.lock
+
+# Solidity and Foundry
+/cache/
+/out/
+/broadcast/
+
+# Node and Circom tooling
+/node_modules/
+*.r1cs
+*.wtns
+*.zkey
+*.wasm
+*.sym
+
+# Reports and local analysis output
+/zkbind-report.json
+/zkbind-report.sarif
+/zkbind-graph.json
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
