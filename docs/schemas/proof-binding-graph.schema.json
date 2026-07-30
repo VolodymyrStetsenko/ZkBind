@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zkbind.dev/schemas/proof-binding-graph.schema.json",
+  "title": "ZKBind Proof Binding Graph",
+  "description": "Machine-readable graph connecting proof semantics to application values, verifier inputs, state, and protected actions.",
+  "type": "object",
+  "required": ["schemaVersion", "project", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.1.0"
+    },
+    "project": {
+      "type": "object",
+      "required": ["root"],
+      "additionalProperties": false,
+      "properties": {
+        "root": { "type": "string" },
+        "commit": { "type": "string" },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "location": {
+      "type": "object",
+      "required": ["path", "line", "column"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "endColumn": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "application_value",
+            "circuit_signal",
+            "public_signal_slot",
+            "encoding",
+            "verifier",
+            "verification_key",
+            "program_identifier",
+            "state_commitment",
+            "replay_guard",
+            "protected_action",
+            "domain"
+          ]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "valueType": { "type": "string" },
+        "location": { "$ref": "#/$defs/location" },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "integer", "boolean", "null"]
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "from", "to", "kind", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "derives_from",
+            "encodes_to",
+            "supplied_as",
+            "verified_by",
+            "binds_to",
+            "authorizes",
+            "consumes",
+            "checks",
+            "persists",
+            "updates"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/location" }
+        }
+      }
+    }
+  }
+}
