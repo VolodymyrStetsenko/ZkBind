@@ -90,6 +90,7 @@ pub fn scan_project(root: impl AsRef<Path>) -> io::Result<ScanReport> {
     let root = root.as_ref().canonicalize()?;
     let mut solidity_files = Vec::new();
     collect_solidity_files(&root, &mut solidity_files)?;
+    solidity_files.sort();
 
     let mut report = ScanReport {
         root,
@@ -142,6 +143,10 @@ fn is_ignored_directory(path: &Path) -> bool {
 
 fn scan_solidity_file(path: &Path, report: &mut ScanReport) -> io::Result<()> {
     let source = fs::read_to_string(path)?;
+    let report_path = path
+        .strip_prefix(&report.root)
+        .unwrap_or(path)
+        .to_path_buf();
 
     for (line_index, line) in source.lines().enumerate() {
         for marker in [
@@ -158,7 +163,7 @@ fn scan_solidity_file(path: &Path, report: &mut ScanReport) -> io::Result<()> {
                     confidence: Confidence::High,
                     message: "ZKBind identified a likely proof-verification call. This is inventory evidence, not a vulnerability.".to_owned(),
                     location: SourceLocation {
-                        path: path.to_path_buf(),
+                        path: report_path.clone(),
                         line: line_index + 1,
                         column: column + 1,
                     },
@@ -209,13 +214,17 @@ mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    #[test]
-    fn discovers_solidity_verifier_call_sites() {
+    fn temporary_directory(test_name: &str) -> PathBuf {
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("system clock must be after Unix epoch")
             .as_nanos();
-        let directory = std::env::temp_dir().join(format!("zkbind-{unique}"));
+        std::env::temp_dir().join(format!("zkbind-{test_name}-{unique}"))
+    }
+
+    #[test]
+    fn discovers_solidity_verifier_call_sites() {
+        let directory = temporary_directory("discovery");
         fs::create_dir_all(&directory).expect("fixture directory must be created");
 
         let contract = directory.join("Membership.sol");
@@ -230,7 +239,36 @@ mod tests {
         assert_eq!(report.scanned_files, 1);
         assert_eq!(report.findings.len(), 1);
         assert_eq!(report.findings[0].rule_id, "ZKB000");
+        assert_eq!(report.findings[0].location.path, PathBuf::from("Membership.sol"));
         assert_eq!(report.findings[0].location.line, 1);
+
+        fs::remove_dir_all(directory).expect("fixture directory must be removed");
+    }
+
+    #[test]
+    fn orders_findings_by_source_path() {
+        let directory = temporary_directory("ordering");
+        fs::create_dir_all(&directory).expect("fixture directory must be created");
+
+        for name in ["ZVerifier.sol", "AVerifier.sol"] {
+            fs::write(
+                directory.join(name),
+                "contract VerifierUser { function run() external { verifier.verifyProof(a, b, c, input); } }",
+            )
+            .expect("fixture contract must be written");
+        }
+
+        let report = scan_project(&directory).expect("scan must succeed");
+        let paths = report
+            .findings
+            .iter()
+            .map(|finding| finding.location.path.clone())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            paths,
+            vec![PathBuf::from("AVerifier.sol"), PathBuf::from("ZVerifier.sol")]
+        );
 
         fs::remove_dir_all(directory).expect("fixture directory must be removed");
     }
