@@ -239,7 +239,10 @@ mod tests {
         assert_eq!(report.scanned_files, 1);
         assert_eq!(report.findings.len(), 1);
         assert_eq!(report.findings[0].rule_id, "ZKB000");
-        assert_eq!(report.findings[0].location.path, PathBuf::from("Membership.sol"));
+        assert_eq!(
+            report.findings[0].location.path,
+            PathBuf::from("Membership.sol")
+        );
         assert_eq!(report.findings[0].location.line, 1);
 
         fs::remove_dir_all(directory).expect("fixture directory must be removed");
@@ -267,7 +270,10 @@ mod tests {
 
         assert_eq!(
             paths,
-            vec![PathBuf::from("AVerifier.sol"), PathBuf::from("ZVerifier.sol")]
+            vec![
+                PathBuf::from("AVerifier.sol"),
+                PathBuf::from("ZVerifier.sol")
+            ]
         );
 
         fs::remove_dir_all(directory).expect("fixture directory must be removed");
