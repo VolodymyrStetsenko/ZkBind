@@ -29,13 +29,16 @@ jobs:
         run: cargo fmt --all --check
 
       - name: Run Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo test --workspace --locked
+
+      - name: Build release binary
+        run: cargo build --release --workspace --locked
 
       - name: Run scanner smoke test
         run: |
-          cargo run -p zkbind-cli -- scan fixtures --format json > zkbind-report.json
+          cargo run --locked -p zkbind-cli -- scan fixtures --format json > zkbind-report.json
           python -m json.tool zkbind-report.json > /dev/null
           test "$(python -c 'import json; print(len(json.load(open("zkbind-report.json"))["findings"]))')" -ge 2
