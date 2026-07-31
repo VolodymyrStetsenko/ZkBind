@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://zkbind.dev/schemas/proof-binding-graph.schema.json",
+  "$id": "https://raw.githubusercontent.com/VolodymyrStetsenko/ZkBind/main/docs/schemas/proof-binding-graph.schema.json",
   "title": "ZKBind Proof Binding Graph",
   "description": "Machine-readable graph connecting proof semantics to application values, verifier inputs, state, and protected actions.",
   "type": "object",
