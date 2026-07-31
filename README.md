@@ -1,11 +1,14 @@
 # ZKBind
 
+[![CI](https://github.com/VolodymyrStetsenko/ZkBind/actions/workflows/ci.yml/badge.svg)](https://github.com/VolodymyrStetsenko/ZkBind/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 **Cross-layer security analysis for zero-knowledge proof integrations.**
 
-ZKBind is an open-source security tool for the application boundary around zero-knowledge proofs. Its goal is to trace how a statement moves from a circuit or zkVM guest through public inputs, a verifier, and into the protected action performed by an application.
+ZKBind analyzes how zero-knowledge proofs are connected to application logic. It traces the boundary between a circuit or zkVM program, public values, a verifier, and the state-changing action protected by the proof.
 
 ```text
-Circuit / zkVM guest
+Circuit or zkVM program
         ↓
 Public inputs / public values
         ↓
@@ -16,104 +19,122 @@ Solidity integration
 Protocol state and protected action
 ```
 
-A cryptographically valid proof can still be unsafe when the surrounding application does not bind it to the intended chain, contract, action, user, state root, verification key, nonce, or nullifier. ZKBind is being built to detect and explain those cross-layer failures.
+A proof may be cryptographically valid while the surrounding application remains vulnerable. Common integration failures include proof replay, missing domain separation, incorrectly scoped nullifiers, unauthorized state roots, public-input ordering errors, mutable verifiers, and application values that are not committed by the proof.
 
-> **Project status:** early research prototype. The repository is public from the beginning so that design decisions, tests, limitations, and progress remain reviewable.
+## Current capabilities
 
-## Why ZKBind
+The current implementation provides a tested foundation for Solidity integration analysis:
 
-Circuit-focused tools are essential, but they usually cannot determine whether an application consumes a valid proof safely. ZKBind focuses on integration risks such as:
+- recursively discovers Solidity source files;
+- ignores common generated and dependency directories;
+- locates likely `verifyProof` and `verify_proof` call sites;
+- reports exact file, line, and column locations;
+- produces human-readable and JSON output;
+- uses stable rule identifiers, severity, and confidence fields;
+- includes vulnerable and secured integration fixtures;
+- runs formatting, linting, unit tests, and scanner smoke tests in CI.
 
-- cross-chain, cross-contract, cross-action, and cross-user proof replay;
-- missing or incorrectly scoped nullifiers;
-- stale, unauthorized, or prover-selected state roots;
-- public-input ordering and encoding mismatches;
-- mutable verifiers, verification keys, or zkVM program identifiers;
-- verified public values that are ignored by business logic;
-- application-critical values that are never committed inside the proof;
-- upgrade paths that silently change proof semantics.
+The current rule `ZKB000` is an informational discovery record. It identifies a likely verifier call site but does not classify it as a vulnerability.
 
-## Current prototype
+## Installation
 
-The first executable milestone provides:
+Requirements:
 
-- a Rust workspace and distributable CLI foundation;
-- recursive Solidity source discovery;
-- conservative verifier call-site inventory;
-- structured terminal and JSON reports;
-- shared source-location and finding models;
-- CI for formatting, linting, and tests.
+- Rust 1.74 or newer;
+- Cargo.
 
-The prototype intentionally reports discovery evidence before claiming vulnerabilities. Cross-layer security rules will be enabled only when they have defensible static evidence and reproducible fixtures.
+Build an optimized binary:
 
-## Planned MVP
+```bash
+git clone https://github.com/VolodymyrStetsenko/ZkBind.git
+cd ZkBind
+cargo build --release
+```
 
-The first supported vertical is:
+The binary is created at:
+
+```text
+target/release/zkbind
+```
+
+Install it into Cargo's binary directory:
+
+```bash
+cargo install --path crates/zkbind-cli
+```
+
+## Usage
+
+Scan a project:
+
+```bash
+zkbind scan ./path/to/project
+```
+
+Scan the current directory:
+
+```bash
+zkbind scan
+```
+
+Produce JSON output:
+
+```bash
+zkbind scan ./path/to/project --format json
+```
+
+Display help or version information:
+
+```bash
+zkbind --help
+zkbind --version
+```
+
+## Example output
+
+```text
+ZKBind scan
+root: /workspace/protocol
+Solidity files: 14
+verifier call sites: 2
+/workspace/protocol/src/Claim.sol:61:17  ZKB000  Verifier call site discovered
+/workspace/protocol/src/Vote.sol:84:21   ZKB000  Verifier call site discovered
+```
+
+JSON reports include a schema version, scan root, number of Solidity files, findings, severity, confidence, messages, and source locations.
+
+## Analysis target
+
+ZKBind is designed to answer questions that circuit-only tools cannot resolve on their own:
+
+- Is a proof bound to the correct chain, contract, action, and recipient?
+- Can the same proof or nullifier be reused?
+- Does the application authorize and validate the state root used by the proof?
+- Are public inputs constructed in the correct order and encoding?
+- Is the intended verifier, verification key, or program identifier pinned?
+- Are security-critical application values committed inside the proof?
+- Are verified values actually consumed by the protected action?
+
+## Supported stack
+
+The first complete analysis path targets:
 
 ```text
 Circom + SnarkJS Groth16 + Solidity + Foundry
 ```
 
-The MVP roadmap includes:
+Support for Noir and zkVM integrations will be added through separate adapters after the Circom/Solidity analysis path is stable.
 
-1. extracting Circom public-signal names and ordering;
-2. identifying generated verifier contracts and call sites;
-3. mapping Solidity values into public-signal slots;
-4. building a proof-binding graph;
-5. implementing replay, nullifier, domain, root, and verifier-integrity rules;
-6. exporting terminal, JSON, Markdown, Mermaid, and SARIF reports;
-7. generating Foundry regression-test templates for selected findings.
-
-Noir and zkVM adapters will follow after the first stable Circom/Solidity release.
-
-## Quick start
-
-Requirements:
-
-- Rust toolchain with Cargo.
-
-Run the current scanner against a project directory:
-
-```bash
-cargo run -p zkbind-cli -- scan ./path/to/project
-```
-
-JSON output:
-
-```bash
-cargo run -p zkbind-cli -- scan ./path/to/project --format json
-```
-
-Run the quality gates:
-
-```bash
-cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-```
-
-## Intended output
-
-A mature ZKBind report will connect application values to proof semantics:
-
-```text
-msg.sender
-   ↓ encoding
-publicSignals[2]
-   ↓
-Verifier.verifyProof(...)
-   ↓
-claimCredential(recipient)
-```
-
-Every security finding should reference source locations, graph nodes, evidence, confidence, impact, and a reproducible remediation or test strategy.
-
-## Repository structure
+## Project structure
 
 ```text
 crates/
-├── zkbind-cli/       # command-line interface and project scanning
-└── zkbind-core/      # shared models, scanner primitives, and rule interfaces
+├── zkbind-cli/       # command-line interface
+└── zkbind-core/      # source discovery, findings, and report models
+
+fixtures/
+├── vulnerable/      # intentionally unsafe integrations
+└── secure/          # corrected counterparts
 
 docs/
 ├── project-rfc.md
@@ -122,18 +143,44 @@ docs/
     └── proof-binding-graph.schema.json
 ```
 
-Additional adapters, fixtures, benchmarks, Foundry harnesses, and report backends will be introduced as their implementations become testable.
+The architecture and implementation milestones are documented in [`docs/project-rfc.md`](docs/project-rfc.md). Security assumptions and analysis boundaries are documented in [`docs/threat-model.md`](docs/threat-model.md).
 
-## Security and responsible use
+## Current limitations
 
-ZKBind is intended for defensive research, authorized audits, development, and CI. It does not prove circuit soundness, replace a manual security review, or authorize testing against systems without explicit permission.
+ZKBind currently performs verifier call-site discovery. It does not yet:
 
-Please do not report speculative scanner output as a confirmed vulnerability. Validate findings against the project specification, circuit semantics, deployment configuration, and real application flow.
+- parse Solidity AST or control-flow graphs;
+- map expressions into public-signal indices;
+- parse Circom `.sym`, R1CS, or verification-key metadata;
+- detect replay, nullifier, domain-binding, or root-validation vulnerabilities automatically;
+- prove circuit soundness;
+- replace manual security review.
 
-## Author
+Scanner output must be validated against the protocol specification, circuit semantics, deployment configuration, and application flow.
 
-Created and maintained by **Volodymyr Stetsenko** as part of an independent smart-contract and zero-knowledge security research portfolio.
+## Development
+
+Run all local checks:
+
+```bash
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+```
+
+Run the scanner against the included fixtures:
+
+```bash
+cargo run -p zkbind-cli -- scan fixtures
+cargo run -p zkbind-cli -- scan fixtures --format json
+```
+
+Contribution requirements are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports should follow [`SECURITY.md`](SECURITY.md).
+
+## Maintainer
+
+**Volodymyr Stetsenko**
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0. See [`LICENSE`](LICENSE).
