@@ -4,19 +4,20 @@ ZKBind welcomes focused contributions that improve the correctness, reproducibil
 
 ## Before contributing
 
-Please read:
+Read:
 
 - `docs/project-rfc.md` for project scope and architecture;
 - `docs/threat-model.md` for modeled security properties;
 - `SECURITY.md` before reporting sensitive issues.
 
-A contribution should fit the cross-layer focus of the project. General circuit-soundness checks may be better contributed to an established circuit-analysis tool unless they directly support proof-to-application mapping.
+Contributions must fit the cross-layer focus of the project. General circuit-soundness checks are better suited to established circuit-analysis tools unless they directly support proof-to-application mapping.
 
 ## Development setup
 
 Requirements:
 
-- Rust toolchain with Cargo;
+- Rust 1.74 or newer;
+- Cargo;
 - rustfmt;
 - Clippy.
 
@@ -24,15 +25,16 @@ Run the required checks:
 
 ```bash
 cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo build --release --workspace --locked
 ```
 
 Run the scanner against the included fixtures:
 
 ```bash
-cargo run -p zkbind-cli -- scan fixtures
-cargo run -p zkbind-cli -- scan fixtures --format json
+cargo run --locked -p zkbind-cli -- scan fixtures
+cargo run --locked -p zkbind-cli -- scan fixtures --format json
 ```
 
 ## Rule contribution requirements
@@ -49,7 +51,7 @@ A new security rule must include:
 8. remediation guidance;
 9. source and license metadata for any externally derived benchmark.
 
-Do not classify text matches or missing keywords as confirmed vulnerabilities. Findings must be supported by defensible source-level evidence.
+Text matches and missing keywords must not be classified as confirmed vulnerabilities. Findings require defensible source-level evidence.
 
 ## Pull requests
 
