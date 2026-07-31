@@ -29,10 +29,12 @@ The current implementation provides a tested foundation for Solidity integration
 - ignores common generated and dependency directories;
 - locates likely `verifyProof` and `verify_proof` call sites;
 - reports exact file, line, and column locations;
+- returns findings in deterministic source-path order;
+- uses project-relative finding paths for portable reports;
 - produces human-readable and JSON output;
 - uses stable rule identifiers, severity, and confidence fields;
 - includes vulnerable and secured integration fixtures;
-- runs formatting, linting, unit tests, and scanner smoke tests in CI.
+- runs formatting, linting, unit tests, release builds, and scanner smoke tests in CI.
 
 The current rule `ZKB000` is an informational discovery record. It identifies a likely verifier call site but does not classify it as a vulnerability.
 
@@ -48,7 +50,7 @@ Build an optimized binary:
 ```bash
 git clone https://github.com/VolodymyrStetsenko/ZkBind.git
 cd ZkBind
-cargo build --release
+cargo build --release --locked
 ```
 
 The binary is created at:
@@ -60,7 +62,7 @@ target/release/zkbind
 Install it into Cargo's binary directory:
 
 ```bash
-cargo install --path crates/zkbind-cli
+cargo install --path crates/zkbind-cli --locked
 ```
 
 ## Usage
@@ -97,8 +99,8 @@ ZKBind scan
 root: /workspace/protocol
 Solidity files: 14
 verifier call sites: 2
-/workspace/protocol/src/Claim.sol:61:17  ZKB000  Verifier call site discovered
-/workspace/protocol/src/Vote.sol:84:21   ZKB000  Verifier call site discovered
+src/Claim.sol:61:17  ZKB000  Verifier call site discovered
+src/Vote.sol:84:21   ZKB000  Verifier call site discovered
 ```
 
 JSON reports include a schema version, scan root, number of Solidity files, findings, severity, confidence, messages, and source locations.
@@ -164,15 +166,16 @@ Run all local checks:
 
 ```bash
 cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo build --release --workspace --locked
 ```
 
 Run the scanner against the included fixtures:
 
 ```bash
-cargo run -p zkbind-cli -- scan fixtures
-cargo run -p zkbind-cli -- scan fixtures --format json
+cargo run --locked -p zkbind-cli -- scan fixtures
+cargo run --locked -p zkbind-cli -- scan fixtures --format json
 ```
 
 Contribution requirements are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md). Security reports should follow [`SECURITY.md`](SECURITY.md).
