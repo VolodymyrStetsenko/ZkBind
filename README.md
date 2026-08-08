@@ -1,6 +1,7 @@
 # ZKBind
 
 [![CI](https://github.com/VolodymyrStetsenko/ZkBind/actions/workflows/ci.yml/badge.svg)](https://github.com/VolodymyrStetsenko/ZkBind/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.1.0-111111)](Cargo.toml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **Cross-layer security analysis for zero-knowledge proof integrations.**
@@ -37,6 +38,8 @@ The current implementation provides a tested foundation for Solidity integration
 - runs formatting, linting, unit tests, release builds, and scanner smoke tests in CI.
 
 The current rule `ZKB000` is an informational discovery record. It identifies a likely verifier call site but does not classify it as a vulnerability.
+
+ZKBind is a focused research foundation, not an automated security verdict. Cross-layer proof integration review remains a source-level reasoning task. For a defined protocol engagement, see [Working With Me](https://github.com/VolodymyrStetsenko/VolodymyrStetsenko/blob/main/WORK_WITH_ME.md).
 
 ## Installation
 
